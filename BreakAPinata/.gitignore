@@ -1,0 +1,11 @@
+# Entorno local
+.venv/
+__pycache__/
+*.pyc
+*.blend1
+
+# Renders intermedios pesados (los renders presentados sí se versionan)
+renders/**/_tmp/
+renders/**/turntable_frames/
+renders/**/fbx_check/
+review/_tmp/
