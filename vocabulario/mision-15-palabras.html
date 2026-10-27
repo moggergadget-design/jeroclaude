@@ -1,0 +1,643 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Misión 15 Palabras</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: one-column game console. Sticky stat bar, a numbered 60-minute route, then a word collection that fills with amber as you master it. */
+:root{
+  --bg:#EDF1F7; --surface:#FFFFFF; --sunk:#E2E8F1; --ink:#14203A; --muted:#55617B; --line:#D0D8E5;
+  --amber:#E09200; --amber-text:#8F5600; --amber-soft:#FCEBC4; --on-amber:#1E1300;
+  --good:#1B7E4F; --good-soft:#DCF2E5; --bad:#BF3A2F; --bad-soft:#FBE2DF;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1424; --surface:#172038; --sunk:#111A2E; --ink:#E8EEF9; --muted:#9AA6C0; --line:#28344F;
+    --amber:#F2AE2E; --amber-text:#FFC75E; --amber-soft:#3A2C0F; --on-amber:#1E1300;
+    --good:#4CC98F; --good-soft:#123326; --bad:#F2685C; --bad-soft:#3A1715;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1424; --surface:#172038; --sunk:#111A2E; --ink:#E8EEF9; --muted:#9AA6C0; --line:#28344F;
+  --amber:#F2AE2E; --amber-text:#FFC75E; --amber-soft:#3A2C0F; --on-amber:#1E1300;
+  --good:#4CC98F; --good-soft:#123326; --bad:#F2685C; --bad-soft:#3A1715;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 56px;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:780px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+kbd{font-family:var(--body);font-size:12px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;color:var(--muted);background:var(--bg)}
+
+/* top bar */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--display);font-weight:800;font-size:19px;display:flex;align-items:center;gap:8px;margin-right:auto;background:none;border:0;padding:0;cursor:pointer}
+.drop{width:14px;height:18px;background:var(--amber);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;box-shadow:inset -3px -3px 0 rgba(0,0,0,.15)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill small{font-weight:400;color:var(--muted)}
+.pill.hot{background:var(--amber);color:var(--on-amber);border-color:var(--amber)}
+@media (max-width:460px){.topbar .wrap{gap:6px}.brand{font-size:17px}.pill{font-size:13px;padding:4px 8px}.pill.time small{display:none}}
+.iconbtn{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.iconbtn svg{width:18px;height:18px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:11px 18px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:var(--surface);transition:transform .08s ease}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:var(--on-amber);box-shadow:0 3px 0 var(--amber-text)}
+.btn.ghost{background:transparent}
+.btn.big{font-size:18px;padding:14px 22px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.center{justify-content:center}
+
+/* home */
+.hero{padding-block:32px 8px;display:grid;gap:14px}
+.eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700;margin:0}
+.hero h1{font-size:clamp(34px,7vw,56px);font-weight:800;letter-spacing:-.02em}
+.hero h1 em{font-style:normal;color:var(--amber-text)}
+.lede{font-size:18px;max-width:58ch;margin:0;color:var(--muted)}
+.meter{display:grid;gap:6px;max-width:420px}
+.meter-top{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
+.meter-bar,.bar{height:10px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.meter-bar i,.bar i{display:block;height:100%;background:var(--amber);border-radius:inherit;transition:width .4s ease}
+section.block{padding-block:28px 0;display:grid;gap:12px}
+section.block h2{font-size:24px}
+.sub{margin:-6px 0 0;color:var(--muted)}
+.route{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.stage{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:12px 14px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.stage:hover{border-color:var(--amber)}
+.stage .num{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:18px;background:var(--sunk)}
+.stage.done .num{background:var(--good);color:var(--surface)}
+.stage.next{border:2px solid var(--amber);padding:11px 13px}
+.stage.next .num{background:var(--amber);color:var(--on-amber)}
+.st-text{flex:1;min-width:0;display:grid}
+.st-text strong{font-size:17px}
+.st-text span{font-size:14px;color:var(--muted)}
+.mins{flex:none;font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (min-width:620px){.chips{grid-template-columns:repeat(5,1fr)}}
+.chip{--p:0;position:relative;text-align:left;padding:10px 10px 8px;border-radius:12px;border:1px solid var(--line);cursor:pointer;min-width:0;
+  background:linear-gradient(to top,var(--amber-soft) calc(var(--p)*100%),var(--surface) calc(var(--p)*100%))}
+.chip b{display:block;font-size:15px;overflow-wrap:anywhere}
+.chip.full{border-color:var(--amber)}
+.pips{display:flex;gap:3px;margin-top:6px}
+.pips i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--amber)}
+.reset{padding-top:28px;color:var(--muted);font-size:14px}
+.linkbtn{background:none;border:0;padding:0;text-decoration:underline;cursor:pointer;color:var(--muted)}
+.linkbtn.warn{color:var(--bad);font-weight:700}
+
+/* stage chrome */
+.shead{display:flex;align-items:center;gap:10px;padding-block:16px 10px}
+.stitle{flex:1;min-width:0;font-family:var(--display);font-weight:700;font-size:18px}
+.count{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.instr{color:var(--muted);margin:14px 0 10px}
+
+/* question card */
+.qcard{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;display:grid;gap:16px}
+.qlabel{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--muted)}
+.prompt{font-size:20px;display:grid;gap:8px;justify-items:start}
+.big-word{font-family:var(--display);font-weight:800;font-size:clamp(36px,8vw,52px);line-height:1}
+.quote{font-family:var(--display);font-weight:700;font-size:clamp(22px,5vw,28px);line-height:1.2}
+.es{font-size:16px;color:var(--muted)}
+.sentence{font-size:clamp(20px,4.6vw,24px);line-height:1.45}
+.blank{display:inline-block;min-width:4.5em;border-bottom:3px solid var(--amber);text-align:center;font-weight:700;color:var(--amber-text)}
+.opts{display:grid;gap:10px}
+@media (min-width:560px){.opts{grid-template-columns:1fr 1fr}}
+.opt{display:flex;align-items:center;gap:10px;text-align:left;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:16px;min-width:0}
+.opt span{min-width:0;overflow-wrap:anywhere}
+.opt:hover:not([disabled]){border-color:var(--amber)}
+.opt[disabled]{cursor:default}
+.opt.right{background:var(--good-soft);border-color:var(--good)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.fb{border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.fb.good{background:var(--good-soft);color:var(--ink)}
+.fb.good strong{color:var(--good)}
+.fb.bad{background:var(--bad-soft)}
+.fb.bad strong{color:var(--bad)}
+.fb.warn{background:var(--amber-soft)}
+.fb .row{justify-content:flex-end}
+.slots{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.3em;overflow-wrap:anywhere}
+.typeform{display:grid;gap:12px}
+.typeform input{font:inherit;font-size:22px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.typeform input:focus{outline:none;border-color:var(--amber)}
+.say{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px 4px 10px;font-size:14px;font-weight:700;cursor:pointer}
+.say svg{width:16px;height:16px}
+
+/* flashcard */
+.flip{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:26px 22px;min-height:340px;display:grid;gap:12px;align-content:center;cursor:pointer;animation:turn .28s ease}
+.flip.front{justify-items:center;text-align:center}
+.flip .pos{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.08em}
+.flip .word{font-family:var(--display);font-weight:800;font-size:clamp(44px,11vw,72px);line-height:1;letter-spacing:-.02em}
+.flip .pron{font-size:18px;color:var(--muted)}
+.flip .tap{font-size:14px;color:var(--muted);margin:8px 0 0}
+.flip.back .head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.flip.back .head h3{font-size:32px}
+.trans{font-family:var(--display);font-size:clamp(26px,6vw,34px);font-weight:700;color:var(--amber-text);line-height:1.15}
+.def{font-size:18px;margin:0}
+.example{margin:0;padding-left:14px;border-left:3px solid var(--line)}
+.example q{font-size:18px;quotes:none}
+.example mark{background:var(--amber-soft);color:inherit;padding:0 3px;border-radius:4px;font-weight:700}
+.example small{display:block;color:var(--muted);font-size:15px}
+.tip{background:var(--sunk);border-radius:12px;padding:10px 14px;margin:0;font-size:15px}
+.tip b{color:var(--amber-text)}
+@keyframes turn{from{transform:perspective(900px) rotateY(70deg);opacity:.2}to{transform:none;opacity:1}}
+
+/* match */
+.match{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:10px}
+.col{display:grid;gap:8px;align-content:start}
+.tile{min-width:0;text-align:left;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;overflow-wrap:anywhere;font-size:15px;min-height:62px}
+.tile.w{font-family:var(--display);font-weight:700;font-size:18px}
+.tile.sel{border:2px solid var(--amber);background:var(--amber-soft);padding:11px}
+.tile.solved{background:var(--good-soft);border-color:var(--good);opacity:.65;cursor:default}
+.shake{animation:shake .35s ease;border-color:var(--bad)!important;background:var(--bad-soft)!important}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+
+/* rush */
+.rush-top{display:flex;align-items:center;gap:14px;margin-top:16px}
+.rush-top .bar{flex:1;height:14px}
+.clock{font-family:var(--display);font-weight:800;font-size:28px;font-variant-numeric:tabular-nums;min-width:3ch;text-align:right}
+.rush-card{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 22px;display:grid;gap:10px;text-align:center;justify-items:center;min-height:200px;align-content:center}
+.rush-card.flash-good{box-shadow:0 0 0 3px var(--good)}
+.rush-card.flash-bad{box-shadow:0 0 0 3px var(--bad)}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.yn .btn{font-size:20px;padding:18px}
+.btn.no{background:var(--bad-soft);border-color:var(--bad)}
+.btn.yes{background:var(--good-soft);border-color:var(--good)}
+.rush-score{font-size:15px;color:var(--muted)}
+.rush-score b{color:var(--ink);font-size:20px}
+
+/* intro + result */
+.panel{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:grid;gap:14px}
+.panel h1{font-size:clamp(30px,6vw,44px);font-weight:800}
+.score{font-family:var(--display);font-weight:800;font-size:64px;line-height:1;color:var(--amber-text);font-variant-numeric:tabular-nums}
+.mini{display:flex;flex-wrap:wrap;gap:6px}
+.mini button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px;font-weight:700;cursor:pointer}
+.panel p{margin:0}
+
+/* modal */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(10,15,30,.55);display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal .flip{max-width:560px;width:100%;cursor:default;max-height:100%;overflow:auto;margin:0}
+.modal .close{justify-self:end}
+
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;height:100%}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="topbar">
+  <div class="wrap">
+    <button class="brand" data-act="home" aria-label="Volver al mapa"><span class="drop" aria-hidden="true"></span>Misión 15</button>
+    <span class="pill" title="Puntos de experiencia"><span id="xp">0</span> <small>XP</small></span>
+    <span class="pill" id="streakPill" title="Aciertos seguidos">racha <span id="streak">0</span></span>
+    <span class="pill time" title="Tiempo de estudio (meta: 60:00)"><span id="time">0:00</span> <small>/ 60:00</small></span>
+    <button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Silenciar sonidos"></button>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+const WORDS = [
+ {w:"punctual",pos:"adjetivo",es:"puntual",def:"always on time",pron:"PÁNK-chu-al",
+  ex:"Our teacher is very punctual: class starts at 9:00 sharp.",exEs:"Nuestra profe es muy puntual: la clase empieza a las 9:00 en punto.",
+  tip:"Casi igual que «puntual», con una <b>c</b> extra: pun-<b>c</b>-tual.",
+  cloze:["Please be ___; the bus leaves at 7:15 exactly.","He's never late. He is the most ___ person I know."]},
+ {w:"tranquil",pos:"adjetivo",es:"tranquilo, sereno",def:"calm and peaceful",pron:"TRÁN-kuil",g:"mood",
+  ex:"The lake was tranquil at sunrise.",exEs:"El lago estaba sereno al amanecer.",
+  tip:"Es «tranquilo» sin la -o. Se usa mucho para <b>lugares y momentos</b>: a tranquil lake, a tranquil evening.",
+  cloze:["The village was ___: no cars, no noise, only birds singing.","After the storm, the sea was ___ again."]},
+ {w:"placid",pos:"adjetivo",es:"plácido, apacible",def:"calm, showing no emotion",pron:"PLÁ-sid",g:"mood",
+  ex:"Nothing upsets my grandfather; he always has a placid face.",exEs:"Nada altera a mi abuelo; siempre tiene la cara plácida.",
+  tip:"Como «plácido». Tranquil describe sobre todo el <b>lugar</b>; placid describe la <b>cara o el carácter</b> de alguien que no se altera.",
+  cloze:["Everyone was shouting, but his face stayed ___, without a trace of emotion.","The old cow had a ___ expression, as if nothing in the world could bother her."]},
+ {w:"translucent",pos:"adjetivo",es:"translúcido",def:"lets light through, but you can't see clearly through it",pron:"trans-LÚ-sent",
+  ex:"The lamp has a translucent shade, so the light is soft.",exEs:"La lámpara tiene una pantalla translúcida, así que la luz es suave.",
+  tip:"<b>Transparent</b>: lo ves todo. <b>Translucent</b>: pasa la luz, pero se ve borroso. <b>Opaque</b>: no pasa nada.",
+  cloze:["The bathroom window is ___: light comes in, but nobody can see inside.","Frosted glass is ___, not transparent."]},
+ {w:"blissful",pos:"adjetivo",es:"dichoso, felicísimo",def:"extremely happy",pron:"BLÍS-ful",g:"mood",
+  ex:"They spent a blissful week on the beach.",exEs:"Pasaron una semana dichosa en la playa.",
+  tip:"<b>bliss</b> = felicidad total; <b>-ful</b> = lleno de. Es mucho más fuerte que happy.",
+  cloze:["On the first day of the holidays we felt ___: sun, sea and nothing to do.","It was a ___ moment: warm sun, good music and no homework."]},
+ {w:"content",pos:"adjetivo",es:"contento, satisfecho",def:"quietly satisfied",pron:"kon-TÉNT",g:"mood",
+  ex:"My dog is content with a bowl of food and a long nap.",exEs:"Mi perro está satisfecho con un plato de comida y una buena siesta.",
+  tip:"Ojo al acento: con-<b>TENT</b> como adjetivo. Es felicidad tranquila: no pides más. Blissful es euforia; content es calma.",
+  cloze:["I don't need a bigger house; I'm ___ with what I have.","The cat lay by the fire, warm and ___."]},
+ {w:"luxuriate",pos:"verbo",es:"deleitarse, darse el gusto",def:"to relax and enjoy something pleasurable",pron:"lag-SHÚ-ri-eit",
+  ex:"She luxuriated in the warm afternoon sun.",exEs:"Se deleitó con el sol cálido de la tarde.",
+  tip:"Piensa en <b>luxury</b> (lujo): disfrutar algo como si fuera un lujo. Suele ir con <b>in</b>: luxuriate in a bath.",
+  cloze:["After the exam, I'm going to ___ in a long, hot bath.","On Sunday mornings she likes to ___ in bed with coffee and a good book."]},
+ {w:"glance",pos:"sustantivo / verbo",es:"vistazo, echar un vistazo",def:"a quick look",pron:"GLANS",
+  ex:"She took a glance at her phone.",exEs:"Echó un vistazo a su móvil.",
+  tip:"Una mirada de un segundo. Lo contrario de <b>stare</b> (mirar fijamente). Se dice take a glance o glance at.",
+  cloze:["He took a quick ___ at the clock and ran out.","At first ___, the problem looked easy."]},
+ {w:"merely",pos:"adverbio",es:"meramente, solo",def:"only, just",pron:"MÍR-li",
+  ex:"It was merely a joke, so don't be angry.",exEs:"Era solo una broma, así que no te enfades.",
+  tip:"Suena a «<b>mera</b>mente». Significa lo mismo que only o just.",
+  cloze:["Don't worry, it's ___ a small scratch.","I was ___ asking a question, not complaining."]},
+ {w:"amber",pos:"sustantivo / adjetivo",es:"ámbar",def:"golden-orange color",pron:"ÁM-ber",
+  ex:"The cat has beautiful amber eyes.",exEs:"El gato tiene unos ojos color ámbar preciosos.",
+  tip:"Igual que en español. Es la resina fósil de Jurassic Park y el color del semáforo antes del rojo: <b>an amber light</b>.",
+  cloze:["In autumn the leaves turn red, yellow and ___.","The traffic light changed from green to ___, so I slowed down."]},
+ {w:"intent",pos:"sustantivo / adjetivo",es:"intención, propósito; decidido",def:"determined purpose or aim",pron:"in-TÉNT",
+  ex:"She was intent on winning the race.",exEs:"Estaba decidida a ganar la carrera.",
+  tip:"<b>intent on</b> + -ing = decidido a hacer algo. Se parece a «intención».",
+  cloze:["He was ___ on finishing the puzzle before dinner.","She read the rules carefully; her ___ was to win, not just to take part."]},
+ {w:"fetch",pos:"verbo",es:"ir a buscar y traer",def:"to go and bring something back",pron:"FECH",
+  ex:"Can you fetch my jacket from the car?",exEs:"¿Puedes ir a buscar mi chaqueta al coche?",
+  tip:"Ir + traer en una sola palabra. Lanzar la pelota para que el perro la traiga se llama <b>play fetch</b>.",
+  cloze:["Could you ___ me a glass of water from the kitchen?","Throw the stick and the dog will ___ it."]},
+ {w:"bewildered",pos:"adjetivo",es:"desconcertado, perplejo",def:"completely confused",pron:"bi-UÍL-derd",
+  ex:"He looked bewildered by all the new rules.",exEs:"Parecía desconcertado con tantas normas nuevas.",
+  tip:"be + <b>wild</b> (salvaje): tu cabeza se vuelve salvaje y no entiendes nada.",
+  cloze:["The tourists looked ___: the map made no sense to them.","She was totally ___ when everyone suddenly started speaking Japanese."]},
+ {w:"horror",pos:"sustantivo",es:"horror, espanto",def:"intense fear or shock",pron:"JÓ-rer",
+  ex:"She screamed in horror when she saw the snake.",exEs:"Gritó horrorizada al ver la serpiente.",
+  tip:"Igual que en español, pero la <b>h</b> suena como una j suave. <b>in horror</b> = horrorizado.",
+  cloze:["We watched in ___ as the building caught fire.","To my ___, there was a huge spider on my pillow."]},
+ {w:"slaughter",pos:"verbo / sustantivo",es:"masacrar, sacrificar; matanza",def:"to kill brutally, especially like an animal",pron:"SLÓ-ter",
+  ex:"Thousands of animals are slaughtered every day for meat.",exEs:"Miles de animales son sacrificados cada día para obtener carne.",
+  tip:"La <b>gh</b> no suena: SLÓ-ter. Matadero = <b>slaughterhouse</b>. También se usa para masacres.",
+  cloze:["In the old legend, the dragon would ___ every knight who entered its cave.","Farmers used to ___ a pig every winter to have meat for the year."]},
+];
+const byW = Object.fromEntries(WORDS.map(x => [x.w, x]));
+
+const STAGES = [
+ {id:"learn",n:1,name:"Conoce las palabras",min:10,desc:"Tarjetas con pronunciación, traducción, ejemplo y un truco para recordar."},
+ {id:"match",n:2,name:"Parejas",min:8,desc:"Une cada palabra con su definición. Tres rondas de cinco."},
+ {id:"quiz",n:3,name:"Quiz de significados",min:10,desc:"Inglés, definición y español. Lo que falles vuelve al final."},
+ {id:"cloze",n:4,name:"Completa la frase",min:10,desc:"Elige la palabra que encaja en cada frase."},
+ {id:"spell",n:5,name:"Escríbela",min:10,desc:"Lee la pista y escribe la palabra tú solo, sin opciones."},
+ {id:"rush",n:6,name:"Contrarreloj",min:5,desc:"60 segundos: ¿la palabra y el significado coinciden? Rápido."},
+ {id:"exam",n:7,name:"Examen final",min:7,desc:"15 preguntas mezcladas, una por palabra. Mide lo que has aprendido."},
+];
+const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
+
+const ICON = {
+  say:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>',
+  mute:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="m22 9-6 6M16 9l6 6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>',
+};
+
+/* ---------- state ---------- */
+const KEY = "mision15-v1";
+const fresh = () => ({xp:0,m:{},done:{},rushBest:0,examBest:null,secs:0,muted:false,streak:0,bestStreak:0});
+let S = fresh();
+function load(){ try{ const r = localStorage.getItem(KEY); if(r) S = Object.assign(fresh(), JSON.parse(r)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let view = "home", Q = null, L = null, M = null, R = null, resetArmed = false;
+const app = document.getElementById("app");
+
+/* ---------- helpers ---------- */
+const shuffle = a => { a = [...a]; for(let i=a.length-1;i>0;i--){ const j = Math.random()*(i+1)|0; [a[i],a[j]] = [a[j],a[i]]; } return a; };
+const pick = (a,n) => shuffle(a).slice(0,n);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm = s => s.trim().toLowerCase().replace(/\s+/g," ");
+const mastery = w => S.m[w] || 0;
+const overall = () => WORDS.reduce((t,x) => t + mastery(x.w), 0) / (WORDS.length*5);
+function lev(a,b){ const d = Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[a.length][b.length]; }
+function others(w, n, strict){ return pick(WORDS.filter(x => x !== w && !(strict && x.g && x.g === w.g)), n); }
+function highlight(sentence, w){ return esc(sentence).replace(new RegExp("\\b(" + w + "\\w*)", "i"), "<mark>$1</mark>"); }
+const sayBtn = w => `<button class="say" data-act="say" data-arg="${w}" aria-label="Escuchar ${w}">${ICON.say}Escuchar</button>`;
+const fmt = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+
+/* ---------- sound + speech ---------- */
+let ac;
+function tone(freqs, dur=0.11, type="sine", vol=0.14){
+  if(S.muted) return;
+  try{
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime;
+    freqs.forEach((f,i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t+i*dur); g.gain.exponentialRampToValueAtTime(vol, t+i*dur+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+(i+1)*dur);
+      o.connect(g).connect(ac.destination); o.start(t+i*dur); o.stop(t+(i+1)*dur+0.02); });
+  }catch(e){}
+}
+const sfx = { good:()=>tone([660,990]), bad:()=>tone([200,150],0.14,"square",0.06), win:()=>tone([523,659,784,1047],0.12,"triangle"), tick:()=>tone([880],0.05,"sine",0.05) };
+function say(text){ try{ const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){} }
+
+/* ---------- top bar ---------- */
+function updateBar(){
+  document.getElementById("xp").textContent = S.xp;
+  document.getElementById("streak").textContent = S.streak;
+  document.getElementById("streakPill").classList.toggle("hot", S.streak >= 3);
+  document.getElementById("time").textContent = fmt(S.secs);
+  const mb = document.getElementById("muteBtn");
+  mb.innerHTML = S.muted ? ICON.mute : ICON.say;
+  mb.setAttribute("aria-label", S.muted ? "Activar sonidos" : "Silenciar sonidos");
+}
+function reward(w, ok){
+  let gain = 0;
+  if(ok){ S.streak++; S.bestStreak = Math.max(S.bestStreak, S.streak); gain = 10 + Math.min(S.streak-1,5)*2; S.xp += gain; S.m[w] = Math.min(5, mastery(w)+1); sfx.good(); }
+  else { S.streak = 0; S.m[w] = Math.max(0, mastery(w)-1); sfx.bad(); }
+  updateBar(); save(); return gain;
+}
+setInterval(() => { if(view !== "home" && view !== "result" && !document.hidden){ S.secs++; document.getElementById("time").textContent = fmt(S.secs); if(S.secs % 5 === 0) save(); } }, 1000);
+
+/* ---------- home ---------- */
+const nextStage = () => STAGES.find(s => !S.done[s.id]) || STAGE.exam;
+function chip(x){ const p = mastery(x.w);
+  return `<button class="chip ${p>=5?"full":""}" style="--p:${p/5}" data-act="word" data-arg="${x.w}"><b>${cap(x.w)}</b><span class="pips">${[1,2,3,4,5].map(i=>`<i class="${i<=p?"on":""}"></i>`).join("")}</span></button>`; }
+function home(){
+  stopRush(); clearFx(); view = "home"; resetArmed = false;
+  const n = nextStage(), pct = Math.round(overall()*100), started = Object.keys(S.done).length > 0;
+  const mastered = WORDS.filter(x => mastery(x.w) >= 5).length;
+  app.innerHTML = `
+  <section class="hero">
+    <p class="eyebrow">Inglés · 15 palabras · 60 minutos</p>
+    <h1>De <em>bewildered</em> a <em>blissful</em> en una hora.</h1>
+    <p class="lede">Siete etapas cortas, de fácil a difícil. Cada acierto llena de ámbar una palabra. Cuando brillen las 15, las dominas.</p>
+    <div class="meter">
+      <div class="meter-top"><span>Dominio total</span><span>${pct}% · ${mastered}/15 dominadas</span></div>
+      <div class="meter-bar"><i style="width:${pct}%"></i></div>
+    </div>
+    <div class="row"><button class="btn primary big" data-act="stage" data-arg="${n.id}">${started ? "Continuar" : "Empezar"}: ${n.n}. ${n.name}</button></div>
+  </section>
+  <section class="block">
+    <h2>La ruta de 60 minutos</h2>
+    <p class="sub">Sigue el orden: cada etapa te pide recordar un poco más que la anterior.</p>
+    <ol class="route">${STAGES.map(s => `<li><button class="stage ${S.done[s.id]?"done":""} ${s.id===n.id?"next":""}" data-act="stage" data-arg="${s.id}">
+      <span class="num">${S.done[s.id] ? ICON.check : s.n}</span>
+      <span class="st-text"><strong>${s.name}</strong><span>${s.desc}${s.id==="rush"&&S.rushBest?` Récord: ${S.rushBest}.`:""}${s.id==="exam"&&S.examBest!==null?` Mejor nota: ${S.examBest}/15.`:""}</span></span>
+      <span class="mins">${s.min} min</span></button></li>`).join("")}</ol>
+  </section>
+  <section class="block">
+    <h2>Tu colección</h2>
+    <p class="sub">Toca una palabra para repasar su tarjeta. Cinco aciertos la llenan del todo.</p>
+    <div class="chips">${WORDS.map(chip).join("")}</div>
+  </section>
+  <p class="reset">Mejor racha: ${S.bestStreak} aciertos seguidos. <button class="linkbtn" id="resetBtn" data-act="reset">Borrar mi progreso</button></p>`;
+}
+
+/* ---------- stage router ---------- */
+function startStage(id){
+  stopRush(); window.scrollTo(0,0); clearFx();
+  if(id === "learn") return startLearn();
+  if(id === "match") return startMatch();
+  if(id === "rush"){ view = "rush"; R = {state:"ready"}; return renderRush(); }
+  let qs;
+  if(id === "quiz") qs = shuffle(WORDS.flatMap(w => [qDef(w), Math.random()<.5 ? qWord(w) : qEs(w)]));
+  if(id === "cloze") qs = shuffle(WORDS.flatMap(w => [qCloze(w,0), qCloze(w,1)]));
+  if(id === "spell") qs = shuffle(WORDS).map(qType);
+  if(id === "exam") qs = shuffle(WORDS).map(w => [qDef,qWord,qEs,w2=>qCloze(w2,Math.random()*2|0),qType][Math.random()*5|0](w));
+  runQs(id, qs, {requeue: id !== "exam"});
+}
+function head(st, done, total, extra=""){
+  return `<div class="shead"><button class="btn ghost" data-act="home">← Mapa</button><div class="stitle">${st.n} · ${st.name}${extra}</div><div class="count">${total ? `${done}/${total}` : ""}</div></div>
+  <div class="bar"><i style="width:${total ? done/total*100 : 0}%"></i></div>`;
+}
+
+/* ---------- 1. flashcards ---------- */
+function startLearn(){ view = "learn"; L = {queue: WORDS.map(x => x.w), known: 0, flipped: false}; renderLearn(); }
+function backFace(w){
+  return `<div class="head"><h3>${cap(w.w)}</h3><span class="pron">/${w.pron}/ · ${w.pos}</span>${sayBtn(w.w)}</div>
+    <div class="trans">${esc(w.es)}</div>
+    <p class="def">${esc(w.def)}</p>
+    <p class="example"><q>${highlight(w.ex, w.w)}</q><small>${esc(w.exEs)}</small></p>
+    <p class="tip"><b>Truco:</b> ${w.tip}</p>`;
+}
+function renderLearn(){
+  const w = byW[L.queue[0]];
+  app.innerHTML = head(STAGE.learn, L.known, 15) + (L.flipped
+    ? `<div class="flip back" data-act="noop">${backFace(w)}</div>`
+    : `<div class="flip front" data-act="flip" role="button" tabindex="0" aria-label="Girar la tarjeta">
+        <span class="pos">${w.pos.toUpperCase()}</span><div class="word">${cap(w.w)}</div><div class="pron">/${w.pron}/</div>${sayBtn(w.w)}
+        <p class="tap">¿Sabes qué significa? Piénsalo y toca la tarjeta <kbd>Espacio</kbd></p></div>`) +
+  `<div class="row center" style="margin-top:16px">
+     <button class="btn" data-act="again" ${L.flipped?"":"disabled"}>Otra vez <kbd>←</kbd></button>
+     <button class="btn primary" data-act="know" ${L.flipped?"":"disabled"}>¡Me la sé! <kbd>→</kbd></button></div>`;
+  if(!L.flipped) app.querySelector(".flip").focus({preventScroll:true});
+}
+function flip(){ if(view !== "learn" || L.flipped) return; L.flipped = true; say(L.queue[0]); renderLearn(); }
+function know(){ if(!L.flipped) return; const w = L.queue.shift(); S.m[w] = Math.min(5, mastery(w)+1); S.xp += 5; L.known++; sfx.good(); updateBar(); save();
+  L.flipped = false; if(!L.queue.length) return result("learn", {score:"15/15", label:"palabras vistas. Ya las conoces: ahora toca recordarlas.", acc:1, wrong:[]}); renderLearn(); }
+function again(){ if(!L.flipped) return; L.queue.push(L.queue.shift()); L.flipped = false; renderLearn(); }
+
+/* ---------- 2. matching ---------- */
+function startMatch(){ view = "match"; const o = shuffle(WORDS.map(x => x.w));
+  M = {rounds:[o.slice(0,5),o.slice(5,10),o.slice(10)], r:0, sw:null, sd:null, solved:new Set(), ok:0, bad:0, wrong:new Set()};
+  M.dorder = shuffle(M.rounds[0]); renderMatch(); }
+function renderMatch(){
+  const ws = M.rounds[M.r];
+  app.innerHTML = head(STAGE.match, M.solved.size, 15, ` · ronda ${M.r+1}/3`) +
+  `<p class="instr">Toca una palabra y después su definición.</p>
+  <div class="match"><div class="col">${ws.map(w => `<button class="tile w ${M.solved.has(w)?"solved":""} ${M.sw===w?"sel":""}" data-act="mw" data-arg="${w}" ${M.solved.has(w)?"disabled":""}>${cap(w)}</button>`).join("")}</div>
+  <div class="col">${M.dorder.map(w => `<button class="tile d ${M.solved.has(w)?"solved":""} ${M.sd===w?"sel":""}" data-act="md" data-arg="${w}" ${M.solved.has(w)?"disabled":""}>${esc(byW[w].def)}</button>`).join("")}</div></div>`;
+}
+function matchCheck(){
+  if(!M.sw || !M.sd) return renderMatch();
+  const a = M.sw, b = M.sd; M.sw = M.sd = null;
+  if(a === b){ M.solved.add(a); M.ok++; reward(a, true); renderMatch(); say(a); }
+  else { M.bad++; M.wrong.add(a); reward(a, false); renderMatch();
+    app.querySelector(`[data-act="mw"][data-arg="${a}"]`).classList.add("shake");
+    app.querySelector(`[data-act="md"][data-arg="${b}"]`).classList.add("shake"); }
+  if(M.rounds[M.r].every(w => M.solved.has(w))){
+    setTimeout(() => { if(view !== "match") return;
+      if(M.r < 2){ M.r++; M.dorder = shuffle(M.rounds[M.r]); renderMatch(); }
+      else result("match", {score:`${M.ok}/${M.ok+M.bad}`, label:"intentos correctos.", acc:M.ok/(M.ok+M.bad), wrong:[...M.wrong]}); }, 650);
+  }
+}
+
+/* ---------- question builders ---------- */
+const mc = (w, label, prompt, opts, answer) => ({kind:"mc", w:w.w, label, prompt, opts:shuffle(opts), answer});
+const qDef = w => mc(w, "¿Qué significa?", `<span class="big-word">${cap(w.w)}</span>${sayBtn(w.w)}`, [w.def, ...others(w,3).map(x => x.def)], w.def);
+const qWord = w => mc(w, "¿Qué palabra es?", `<span class="quote">“${esc(w.def)}”</span>`, [w.w, ...others(w,3).map(x => x.w)].map(cap), cap(w.w));
+const qEs = w => mc(w, "¿Cómo se dice en inglés?", `<span class="quote">${esc(w.es)}</span>`, [w.w, ...others(w,3).map(x => x.w)].map(cap), cap(w.w));
+const qCloze = (w,i) => mc(w, "Completa la frase", `<span class="sentence">${esc(w.cloze[i]).replace("___",'<span class="blank">&nbsp;</span>')}</span>`, [w.w, ...others(w,3,true).map(x => x.w)], w.w);
+const qType = w => ({kind:"type", w:w.w, label:"Escribe la palabra en inglés", prompt:`<span class="quote">“${esc(w.def)}”</span><span class="es">En español: ${esc(w.es)}</span>`, answer:w.w, shown:0});
+
+/* ---------- quiz engine (3, 4, 5, 7) ---------- */
+function runQs(id, list, {requeue}){ view = id; Q = {id, list, i:0, ok:0, bad:0, wrong:new Set(), requeue, locked:false, tok:0}; renderQ(); }
+const curQ = () => Q.list[Q.i];
+function slots(q){ return q.answer.split("").map((c,i) => i < q.shown ? c : "_").join(""); }
+function renderQ(){
+  const q = curQ(); Q.tok++; Q.locked = false;
+  const body = q.kind === "mc"
+    ? `<div class="opts">${q.opts.map((o,k) => `<button class="opt" data-act="pick" data-arg="${k}"><kbd>${k+1}</kbd><span>${esc(o)}</span></button>`).join("")}</div>`
+    : `<form class="typeform" id="tf" autocomplete="off">
+        <div class="slots" id="slots" aria-label="${q.answer.length} letras">${slots(q)}</div>
+        <input id="ans" name="ans" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Escribe aquí…" aria-label="Tu respuesta">
+        <div class="row">${Q.id !== "exam" ? `<button type="button" class="btn" data-act="hint">Pista (−2 XP)</button>` : ""}<button class="btn primary" type="submit">Comprobar ⏎</button></div></form>`;
+  app.innerHTML = head(STAGE[Q.id], Q.i, Q.list.length) +
+    `<div class="qcard"><p class="qlabel">${q.label}</p><div class="prompt">${q.prompt}</div>${body}<div id="fb" aria-live="polite"></div></div>`;
+  if(q.kind === "type"){ const f = document.getElementById("tf"); f.addEventListener("submit", submitType); document.getElementById("ans").focus({preventScroll:true}); }
+}
+function answer(ok){
+  const q = curQ(), w = byW[q.w]; Q.locked = true;
+  const gain = reward(q.w, ok);
+  const blank = app.querySelector(".blank"); if(blank) blank.textContent = q.w;
+  const fb = document.getElementById("fb");
+  if(ok){
+    Q.ok++;
+    fb.innerHTML = `<div class="fb good"><strong>¡Correcto! +${gain} XP${S.streak>=3?` · racha de ${S.streak}`:""}</strong></div>`;
+    const tok = Q.tok; setTimeout(() => { if(Q && Q.tok === tok && Q.locked && view === Q.id) next(); }, 850);
+  } else {
+    Q.bad++; Q.wrong.add(q.w);
+    if(Q.requeue && !q.again) Q.list.push(q.kind === "mc" ? {...q, opts:shuffle(q.opts), again:true} : {...q, shown:0, retried:false, again:true});
+    fb.innerHTML = `<div class="fb bad"><strong>Era «${esc(q.kind==="mc" ? q.answer : q.w)}».</strong>
+      <span><b>${cap(w.w)}</b> /${w.pron}/: ${esc(w.def)}. En español: ${esc(w.es)}.</span>
+      ${Q.requeue && !q.again ? `<span class="es">Volverá a salir al final.</span>` : ""}
+      <div class="row"><button class="btn primary" data-act="next">Continuar <kbd>⏎</kbd></button></div></div>`;
+    say(w.w);
+  }
+}
+function pickOpt(k){
+  if(Q.locked) return; const q = curQ(), ok = q.opts[k] === q.answer;
+  app.querySelectorAll(".opt").forEach((b,i) => { b.disabled = true; if(q.opts[i] === q.answer) b.classList.add("right"); else if(i === k) b.classList.add("wrong"); });
+  answer(ok);
+}
+function submitType(e){
+  e.preventDefault();
+  if(Q.locked) return next();
+  const q = curQ(), inp = document.getElementById("ans"), v = norm(inp.value); if(!v) return;
+  if(v === q.answer){ inp.style.borderColor = "var(--good)"; inp.readOnly = true; document.getElementById("slots").textContent = q.answer; return answer(true); }
+  if(!q.retried && lev(v, q.answer) <= 1 + (q.answer.length > 8 ? 1 : 0)){
+    q.retried = true; document.getElementById("fb").innerHTML = `<div class="fb warn"><strong>¡Casi!</strong> Revisa la ortografía e inténtalo otra vez.</div>`; inp.select(); return;
+  }
+  inp.style.borderColor = "var(--bad)"; inp.readOnly = true; document.getElementById("slots").textContent = q.answer; answer(false);
+}
+function hint(){ const q = curQ(); if(Q.locked || q.shown >= q.answer.length-1) return; q.shown++; S.xp = Math.max(0, S.xp-2); updateBar(); save();
+  document.getElementById("slots").textContent = slots(q); document.getElementById("ans").focus(); }
+function next(){
+  if(!Q || !Q.locked) return; Q.i++;
+  if(Q.i < Q.list.length) return renderQ();
+  const st = STAGE[Q.id];
+  if(Q.id === "exam"){ S.examBest = Math.max(S.examBest ?? 0, Q.ok);
+    return result("exam", {score:`${Q.ok}/15`, label: Q.ok>=14 ? "Nivel experto. Estas palabras ya son tuyas." : Q.ok>=11 ? "Muy buen resultado. Repasa las que fallaste y repite." : "Repite las etapas 3 a 5 con las palabras de abajo y vuelve a intentarlo.", acc:Q.ok/15, wrong:[...Q.wrong]}); }
+  result(st.id, {score:`${Math.round(Q.ok/(Q.ok+Q.bad)*100)}%`, label:`de aciertos (${Q.ok} de ${Q.ok+Q.bad} respuestas).`, acc:Q.ok/(Q.ok+Q.bad), wrong:[...Q.wrong]});
+}
+
+/* ---------- 6. rush ---------- */
+function renderRush(){
+  const st = STAGE.rush;
+  if(R.state === "ready"){
+    app.innerHTML = head(st, 0, 0) + `<div class="panel"><h1>60 segundos</h1>
+      <p>Verás una palabra y un significado. Si coinciden, pulsa <b>Sí</b> o <kbd>→</kbd>. Si no, <b>No</b> o <kbd>←</kbd>.</p>
+      <p>Cada fallo te quita 3 segundos. ${S.rushBest ? `Tu récord: <b>${S.rushBest}</b>.` : "Aún no tienes récord."}</p>
+      <div class="row"><button class="btn primary big" data-act="rushgo">¡Empezar!</button></div></div>`;
+    return;
+  }
+  const q = R.q;
+  app.innerHTML = `<div class="shead"><button class="btn ghost" data-act="home">← Mapa</button><div class="stitle">${st.n} · ${st.name}</div><div class="rush-score">aciertos <b id="rs">${R.score}</b></div></div>
+    <div class="rush-top"><div class="bar"><i id="rbar" style="width:100%"></i></div><div class="clock" id="rclock">60</div></div>
+    <div class="rush-card" id="rcard"><span class="big-word">${cap(q.w)}</span><span class="quote">“${esc(byW[q.d].def)}”</span></div>
+    <div class="yn"><button class="btn no" data-act="rush" data-arg="0">No <kbd>←</kbd></button><button class="btn yes" data-act="rush" data-arg="1">Sí <kbd>→</kbd></button></div>`;
+  rushTick();
+}
+function rushGo(){ R = {state:"play", score:0, bad:0, end:Date.now()+60000, wrong:new Set(), q:null}; rushNext(); R.int = setInterval(rushTick, 100); }
+function rushNext(){ const prev = R.q && R.q.w; let w; do { w = WORDS[Math.random()*15|0].w; } while(w === prev);
+  const truth = Math.random() < .5; R.q = {w, truth, d: truth ? w : others(byW[w],1)[0].w}; renderRush(); }
+function rushTick(){
+  if(!R || R.state !== "play") return;
+  const left = Math.max(0, (R.end - Date.now())/1000);
+  const c = document.getElementById("rclock"), b = document.getElementById("rbar");
+  if(c){ c.textContent = Math.ceil(left); b.style.width = (left/60*100) + "%"; }
+  if(left <= 0) rushEnd();
+}
+function rushAns(yes){
+  if(!R || R.state !== "play") return;
+  const ok = yes === R.q.truth, w = R.q.w;
+  if(ok){ R.score++; reward(w, true); } else { R.bad++; R.wrong.add(w); R.end -= 3000; reward(w, false); }
+  rushNext();
+  const card = document.getElementById("rcard"); if(card) card.classList.add(ok ? "flash-good" : "flash-bad");
+}
+function rushEnd(){ clearInterval(R.int); R.state = "over"; const rec = R.score > S.rushBest; S.rushBest = Math.max(S.rushBest, R.score); save();
+  result("rush", {score:R.score, label: rec ? "aciertos. ¡Nuevo récord!" : `aciertos. Tu récord es ${S.rushBest}.`, acc: R.score/Math.max(1,R.score+R.bad), wrong:[...R.wrong]}); }
+function stopRush(){ if(R && R.int){ clearInterval(R.int); R.int = null; R.state = "over"; } }
+
+/* ---------- results ---------- */
+function result(id, {score, label, acc, wrong}){
+  const st = STAGE[id]; S.done[id] = true; save(); view = "result"; window.scrollTo(0,0);
+  const nxt = STAGES.find(s => !S.done[s.id]) || (id === "exam" ? null : STAGE.exam);
+  const title = acc >= .9 ? "¡Brillante!" : acc >= .7 ? "¡Muy bien!" : acc >= .5 ? "Vas por buen camino" : "Toca repasar";
+  sfx.win(); confetti(acc);
+  app.innerHTML = `<div class="panel">
+    <p class="eyebrow">Etapa ${st.n} completada · ${st.name}</p>
+    <h1>${title}</h1>
+    <div><span class="score">${score}</span> <span>${label}</span></div>
+    ${wrong.length ? `<div><p><b>Repasa estas palabras</b> (tócalas para ver su tarjeta):</p><div class="mini" style="margin-top:8px">${wrong.map(w => `<button data-act="word" data-arg="${w}">${cap(w)}</button>`).join("")}</div></div>` : `<p>Sin fallos. Impecable.</p>`}
+    <div class="row">
+      ${nxt && nxt.id !== id ? `<button class="btn primary" data-act="stage" data-arg="${nxt.id}">Siguiente: ${nxt.n}. ${nxt.name}</button>` : ""}
+      <button class="btn" data-act="stage" data-arg="${id}">Repetir etapa</button>
+      <button class="btn ghost" data-act="home">Ver el mapa</button>
+    </div></div>`;
+}
+
+/* ---------- word modal ---------- */
+function openWord(w){
+  closeWord(); say(w);
+  const d = document.createElement("div"); d.className = "modal"; d.id = "modal"; d.dataset.act = "close";
+  d.innerHTML = `<div class="flip back" data-act="noop" role="dialog" aria-modal="true" aria-label="${w}">${backFace(byW[w])}<button class="btn close" data-act="close">Cerrar</button></div>`;
+  document.body.appendChild(d); d.querySelector(".close").focus();
+}
+function closeWord(){ const m = document.getElementById("modal"); if(m) m.remove(); }
+
+/* ---------- confetti ---------- */
+let fxRun = 0;
+function clearFx(){ fxRun++; const c = document.getElementById("fx"); c.getContext("2d").clearRect(0,0,c.width,c.height); }
+function confetti(acc){
+  if(acc < .6 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = document.getElementById("fx"), x = c.getContext("2d"), dpr = devicePixelRatio || 1;
+  c.width = innerWidth*dpr; c.height = innerHeight*dpr; x.scale(dpr,dpr);
+  const cs = getComputedStyle(document.documentElement), cols = ["--amber","--good","--ink","--amber-text"].map(v => cs.getPropertyValue(v).trim());
+  const ps = Array.from({length:90}, () => ({x:innerWidth/2, y:innerHeight*.35, vx:(Math.random()-.5)*12, vy:-Math.random()*11-3, s:4+Math.random()*5, c:cols[Math.random()*4|0], r:Math.random()*6}));
+  let t = 0; const run = ++fxRun; (function f(){ if(run !== fxRun) return; x.clearRect(0,0,innerWidth,innerHeight); ps.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=.35; p.r+=.2; x.save(); x.translate(p.x,p.y); x.rotate(p.r); x.fillStyle=p.c; x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); x.restore(); });
+    if(++t < 90) requestAnimationFrame(f); else x.clearRect(0,0,innerWidth,innerHeight); })();
+}
+
+/* ---------- events ---------- */
+const ACT = {
+  home, stage: startStage, say, flip, know, again, noop(){},
+  word: openWord, close: closeWord,
+  mw(w){ if(M.solved.has(w)) return; M.sw = M.sw === w ? null : w; matchCheck(); },
+  md(w){ if(M.solved.has(w)) return; M.sd = M.sd === w ? null : w; matchCheck(); },
+  pick: k => pickOpt(+k), next, hint,
+  rushgo: rushGo, rush: a => rushAns(a === "1"),
+  mute(){ S.muted = !S.muted; save(); updateBar(); },
+  reset(){ if(!resetArmed){ resetArmed = true; const b = document.getElementById("resetBtn"); b.textContent = "¿Seguro? Toca otra vez para borrarlo todo"; b.classList.add("warn"); return; }
+    S = fresh(); save(); updateBar(); home(); },
+};
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"); if(!a) return;
+  if(a.dataset.act === "close" && a.id === "modal" && e.target !== a) return;
+  ACT[a.dataset.act]?.(a.dataset.arg, a);
+});
+document.addEventListener("keydown", e => {
+  if(document.getElementById("modal")){ if(e.key === "Escape") closeWord(); return; }
+  if(e.target.matches("input")) return;
+  if(e.target.matches("button") && (e.key === "Enter" || e.key === " ")) return;
+  if(view === "learn"){
+    if(!L.flipped && (e.key === " " || e.key === "Enter")){ e.preventDefault(); flip(); }
+    else if(L.flipped && (e.key === "ArrowRight" || e.key === " " || e.key === "Enter")){ e.preventDefault(); know(); }
+    else if(L.flipped && e.key === "ArrowLeft") again();
+  } else if(Q && view === Q.id){
+    if(Q.locked && e.key === "Enter"){ e.preventDefault(); next(); }
+    else if(!Q.locked && curQ().kind === "mc" && /^[1-4]$/.test(e.key)) pickOpt(+e.key - 1);
+  } else if(view === "rush" && R && R.state === "play"){
+    if(e.key === "ArrowLeft"){ e.preventDefault(); rushAns(false); }
+    if(e.key === "ArrowRight"){ e.preventDefault(); rushAns(true); }
+  }
+});
+document.addEventListener("visibilitychange", () => { if(document.hidden) save(); });
+
+/* ---------- boot ---------- */
+try{ window.claude?.hot?.snapshot?.(() => ({S})); }catch(e){}
+function boot(d){ load(); if(d && d.S) S = Object.assign(fresh(), d.S); updateBar(); home(); }
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
